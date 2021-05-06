@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "voting-app.fullname" . }}
+  labels:
+    {{- include "voting-app.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.vote.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "voting-app.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+    {{- with .Values.vote.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      labels:
+        {{- include "voting-app.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.vote.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.vote.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.vote.securityContext | nindent 12 }}
+          image: "{{ .Values.vote.image.repository }}:{{ .Values.vote.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.vote.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          resources:
+            {{- toYaml .Values.vote.resources | nindent 12 }}
+      {{- with .Values.vote.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.vote.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.vote.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
